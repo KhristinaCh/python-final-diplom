@@ -122,3 +122,13 @@ STATIC_URL = '/static/'
 
 AUTH_USER_MODEL = 'app.User'
 
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework_yaml.parsers.YAMLParser',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework_yaml.renderers.YAMLRenderer',
+    ),
+}
+
+

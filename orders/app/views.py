@@ -2,9 +2,53 @@ from rest_framework.views import APIView
 from django.http import JsonResponse
 from django.core.validators import URLValidator
 from django.forms import ValidationError
+from django.db.models import Q, Sum, F
+from rest_framework.response import Response
 from requests import get
 from yaml import Loader, load
 from .models import Category, Parameter, Product, ProductInfo, ProductParameter, Shop
+from django.contrib.auth.password_validation import validate_password
+from .serializers import UserSerializer, ContactSerializer, ProductInfoSerializer
+from .signals import new_user_registered
+
+
+class RegisterAccount(APIView):
+    """
+    Для регистрации покупателей
+    """
+    # Регистрация методом POST
+    def post(self, request, *args, **kwargs):
+
+        # проверяем обязательные аргументы
+        if {'first_name', 'last_name', 'email', 'password', 'company', 'position'}.issubset(request.data):
+            errors = {}
+
+            # проверяем пароль на сложность
+
+            try:
+                validate_password(request.data['password'])
+            except Exception as password_error:
+                error_array = []
+                # noinspection PyTypeChecker
+                for item in password_error:
+                    error_array.append(item)
+                return JsonResponse({'Status': False, 'Errors': {'password': error_array}})
+            else:
+                # проверяем данные для уникальности имени пользователя
+                # request.data._mutable = True
+                request.data.update({})
+                user_serializer = UserSerializer(data=request.data)
+                if user_serializer.is_valid():
+                    # сохраняем пользователя
+                    user = user_serializer.save()
+                    user.set_password(request.data['password'])
+                    user.save()
+                    new_user_registered.send(sender=self.__class__, user_id=user.id)
+                    return JsonResponse({'Status': True})
+                else:
+                    return JsonResponse({'Status': False, 'Errors': user_serializer.errors})
+
+        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
 class PartnerUpdate(APIView):
@@ -55,3 +99,31 @@ class PartnerUpdate(APIView):
                 return JsonResponse({'Status': True})
 
         return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+
+
+class ProductInfoView(APIView):
+    """
+    Класс для поиска товаров
+    """
+    def get(self, request, *args, **kwargs):
+
+        query = Q(shop__state=True)
+        shop_id = request.query_params.get('shop_id')
+        category_id = request.query_params.get('category_id')
+
+        if shop_id:
+            query = query & Q(shop_id=shop_id)
+
+        if category_id:
+            query = query & Q(product__category_id=category_id)
+
+        # фильтруем и отбрасываем дуликаты
+        queryset = ProductInfo.objects.filter(
+            query).select_related(
+            'shop', 'product__category').prefetch_related(
+            'product_parameters__parameter').distinct()
+
+        serializer = ProductInfoSerializer(queryset, many=True)
+
+        return Response(serializer.data)
+

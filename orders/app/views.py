@@ -6,7 +6,7 @@ from django.db.models import Q, Sum, F
 from rest_framework.response import Response
 from requests import get
 from yaml import Loader, load
-from .models import Category, Parameter, Product, ProductInfo, ProductParameter, Shop
+from .models import User, Category, Parameter, Product, ProductInfo, ProductParameter, Shop, ConfirmEmailToken
 from django.contrib.auth.password_validation import validate_password
 from .serializers import UserSerializer, ContactSerializer, ProductInfoSerializer
 from .signals import new_user_registered
@@ -47,8 +47,6 @@ class RegisterAccount(APIView):
                     return JsonResponse({'Status': True})
                 else:
                     return JsonResponse({'Status': False, 'Errors': user_serializer.errors})
-
-        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
 class PartnerUpdate(APIView):
@@ -107,12 +105,12 @@ class ProductInfoView(APIView):
     """
     def get(self, request, *args, **kwargs):
 
-        query = Q(shop__state=True)
+        # query = Q(shop__state=True)
         shop_id = request.query_params.get('shop_id')
         category_id = request.query_params.get('category_id')
 
         if shop_id:
-            query = query & Q(shop_id=shop_id)
+            query = Q(shop_id=shop_id)
 
         if category_id:
             query = query & Q(product__category_id=category_id)

@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from django.http import JsonResponse
 from django.core.validators import URLValidator
 from django.forms import ValidationError
@@ -8,7 +9,7 @@ from requests import get
 from yaml import Loader, load
 from .models import User, Category, Parameter, Product, ProductInfo, ProductParameter, Shop, ConfirmEmailToken
 from django.contrib.auth.password_validation import validate_password
-from .serializers import UserSerializer, ContactSerializer, ProductInfoSerializer
+from .serializers import UserSerializer, ContactSerializer, ProductInfoSerializer, CategorySerializer, ShopSerializer
 from .signals import new_user_registered
 
 
@@ -125,3 +126,18 @@ class ProductInfoView(APIView):
 
         return Response(serializer.data)
 
+
+class CategoryView(ListAPIView):
+    """
+    Класс для просмотра категорий
+    """
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class ShopView(ListAPIView):
+    """
+    Класс для просмотра списка магазинов
+    """
+    queryset = Shop.objects.all()
+    serializer_class = ShopSerializer

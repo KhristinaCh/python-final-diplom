@@ -1,7 +1,7 @@
 # Верстальщик
 from rest_framework import serializers
 
-from .models import User, Contact, Product, ProductInfo, ProductParameter
+from .models import User, Contact, Product, ProductInfo, ProductParameter, Category, Shop
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -12,6 +12,20 @@ class ContactSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'write_only': True}
         }
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('id', 'name',)
+        read_only_fields = ('id',)
+
+
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = ('id', 'name',)
+        read_only_fields = ('id',)
 
 
 class ProductSerializer(serializers.ModelSerializer):
